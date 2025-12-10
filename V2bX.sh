@@ -295,12 +295,8 @@ show_log() {
     fi
 }
 
-install_bbr() {
-    bash <(curl -L -s https://github.com/ylx2016/Linux-NetSpeed/raw/master/tcpx.sh)
-}
-
 update_shell() {
-    wget -O /usr/bin/V2bX -N --no-check-certificate https://raw.githubusercontent.com/wyx2685/V2bX-script/master/V2bX.sh
+    wget -O /usr/bin/V2bX -N --no-check-certificate https://raw.githubusercontent.com/MoeclubM/V2bX-script/master/V2bX.sh
     if [[ $? != 0 ]]; then
         echo ""
         echo -e "${red}下载脚本失败，请检查本机能否连接 Github${plain}"
@@ -947,7 +943,7 @@ show_usage() {
 show_menu() {
     echo -e "
   ${green}V2bX 后端管理脚本，${plain}${red}不适用于docker${plain}
---- https://github.com/wyx2685/V2bX ---
+--- https://github.com/MoeclubM/V2bX ---
   ${green}0.${plain} 修改配置
 ————————————————
   ${green}1.${plain} 安装 V2bX
@@ -963,17 +959,16 @@ show_menu() {
   ${green}9.${plain} 设置 V2bX 开机自启
   ${green}10.${plain} 取消 V2bX 开机自启
 ————————————————
-  ${green}11.${plain} 一键安装 bbr (最新内核)
-  ${green}12.${plain} 查看 V2bX 版本
-  ${green}13.${plain} 生成 X25519 密钥
-  ${green}14.${plain} 升级 V2bX 维护脚本
-  ${green}15.${plain} 生成 V2bX 配置文件
-  ${green}16.${plain} 放行 VPS 的所有网络端口
-  ${green}17.${plain} 退出脚本
+  ${green}11.${plain} 查看 V2bX 版本
+  ${green}12.${plain} 生成 X25519 密钥
+  ${green}13.${plain} 升级 V2bX 维护脚本
+  ${green}14.${plain} 生成 V2bX 配置文件
+  ${green}15.${plain} 放行 VPS 的所有网络端口
+  ${green}16.${plain} 退出脚本
  "
  #后续更新可加入上方字符串中
     show_status
-    echo && read -rp "请输入选择 [0-17]: " num
+    echo && read -rp "请输入选择 [0-16]: " num
 
     case "${num}" in
         0) config ;;
@@ -987,13 +982,12 @@ show_menu() {
         8) check_install && show_log ;;
         9) check_install && enable ;;
         10) check_install && disable ;;
-        11) install_bbr ;;
-        12) check_install && show_V2bX_version ;;
-        13) check_install && generate_x25519_key ;;
-        14) update_shell ;;
-        15) generate_config_file ;;
-        16) open_ports ;;
-        17) exit ;;
+        11) check_install && show_V2bX_version ;;
+        12) check_install && generate_x25519_key ;;
+        13) update_shell ;;
+        14) generate_config_file ;;
+        15) open_ports ;;
+        16) exit ;;
         *) echo -e "${red}请输入正确的数字 [0-16]${plain}" ;;
     esac
 }
