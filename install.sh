@@ -229,7 +229,7 @@ EOF
         if [[ $? == 0 ]]; then
             echo -e "${green}V2bX 重启成功${plain}"
         else
-            echo -e "${red}V2bX 可能启动失败，请稍后使用 V2bX log 查看日志信息，若无法启动，则可能更改了配置格式，请前往 wiki 查看：https://github.com/V2bX-project/V2bX/wiki${plain}"
+            echo -e "${red}V2bX 可能启动失败，请稍后使用 V2bX log 查看日志信息${plain}"
         fi
         first_install=false
     fi
@@ -255,7 +255,7 @@ EOF
     cd $cur_dir
     rm -f install.sh
     echo -e ""
-    echo "V2bX 管理脚本使用方法 (兼容使用V2bX执行，大小写不敏感): "
+    echo "V2bX 管理脚本使用方法(可使用V2bX与v2bx): "
     echo "------------------------------------------"
     echo "V2bX              - 显示管理菜单 (功能更多)"
     echo "V2bX start        - 启动 V2bX"

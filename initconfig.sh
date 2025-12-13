@@ -11,16 +11,7 @@ check_ipv6_support() {
 }
 
 add_node_config() {
-    echo -e "${green}请选择节点核心类型：${plain}"
-    echo -e "${green}1. singbox${plain}"
-    read -rp "请输入：" core_type
-    if [ "$core_type" == "1" ]; then
-        core="sing"
-        core_sing=true
-    else
-        echo "无效的选择。请选择 1。"
-        continue
-    fi
+
     while true; do
         read -rp "请输入节点Node ID：" NodeID
         # 判断NodeID是否为正整数
@@ -31,31 +22,29 @@ add_node_config() {
         fi
     done
 
-    if [ "$core_hysteria2" = true ] && [ "$core_xray" = false ] && [ "$core_sing" = false ]; then
-        NodeType="hysteria2"
-    else
-        echo -e "${yellow}请选择节点传输协议：${plain}"
-        echo -e "${green}1. Shadowsocks${plain}"
-        echo -e "${green}2. Vless${plain}"
-        echo -e "${green}3. Vmess${plain}"
-        echo -e "${green}4. Hysteria${plain}"
-        echo -e "${green}5. Hysteria2${plain}"
-        echo -e "${green}6. Trojan${plain}"
-        echo -e "${green}7. Tuic${plain}"
-        echo -e "${green}8. AnyTLS${plain}"
-        read -rp "请输入：" NodeType
-        case "$NodeType" in
-            1 ) NodeType="shadowsocks" ;;
-            2 ) NodeType="vless" ;;
-            3 ) NodeType="vmess" ;;
-            4 ) NodeType="hysteria" ;;
-            5 ) NodeType="hysteria2" ;;
-            6 ) NodeType="trojan" ;;
-            7 ) NodeType="tuic" ;;
-            8 ) NodeType="anytls" ;;
-            * ) NodeType="shadowsocks" ;;
-        esac
-    fi
+
+    echo -e "${yellow}请选择节点传输协议：${plain}"
+    echo -e "${green}1. Shadowsocks${plain}"
+    echo -e "${green}2. Vless${plain}"
+    echo -e "${green}3. Vmess${plain}"
+    echo -e "${green}4. Hysteria${plain}"
+    echo -e "${green}5. Hysteria2${plain}"
+    echo -e "${green}6. Trojan${plain}"
+    echo -e "${green}7. Tuic${plain}"
+    echo -e "${green}8. AnyTLS${plain}"
+    read -rp "请输入：" NodeType
+    case "$NodeType" in
+        1 ) NodeType="shadowsocks" ;;
+        2 ) NodeType="vless" ;;
+        3 ) NodeType="vmess" ;;
+        4 ) NodeType="hysteria" ;;
+        5 ) NodeType="hysteria2" ;;
+        6 ) NodeType="trojan" ;;
+        7 ) NodeType="tuic" ;;
+        8 ) NodeType="anytls" ;;
+        * ) NodeType="shadowsocks" ;;
+    esac
+
     fastopen=true
     if [ "$NodeType" == "vless" ]; then
         read -rp "请选择是否为reality节点？(y/n)" isreality
@@ -94,7 +83,6 @@ add_node_config() {
     node_config=""
     node_config=$(cat <<EOF
 {
-            "Core": "$core",
             "ApiHost": "$ApiHost",
             "ApiKey": "$ApiKey",
             "NodeID": $NodeID,
@@ -139,7 +127,6 @@ generate_config_file() {
     
     nodes_config=()
     first_node=true
-    core_sing=false
     fixed_api_info=false
     check_api=false
     
@@ -169,11 +156,9 @@ generate_config_file() {
     # 初始化核心配置数组
     cores_config="["
 
-    # 检查并添加sing核心配置
-    if [ "$core_sing" = true ]; then
-        cores_config+="
+    # 添加sing核心配置
+    cores_config+="
     {
-        \"Type\": \"sing\",
         \"Log\": {
             \"Level\": \"error\",
             \"Timestamp\": true
@@ -185,7 +170,6 @@ generate_config_file() {
         },
         \"OriginalPath\": \"/etc/V2bX/sing_origin.json\"
     },"
-    fi
 
     # 移除最后一个逗号并关闭数组
     cores_config+="]"
@@ -261,8 +245,7 @@ EOF
                 "regexp:(.*.||)(rising|kingsoft|duba|xindubawukong|jinshanduba).(com|net|org)",
                 "regexp:(.*.||)(gov|12377|12315|talk.news.pts.org|creaders|zhuichaguoji|efcc.org|cyberpolice|aboluowang|tuidang|epochtimes|zhengjian|110.qq|mingjingnews|inmediahk|xinsheng|breakgfw|chengmingmag|jinpianwang|qi-gong|mhradio|edoors|renminbao|soundofhope|xizang-zhiye|bannedbook|ntdtv|12321|secretchina|dajiyuan|boxun|chinadigitaltimes|dwnews|huaglad|oneplusnews|epochweekly|cn.rfi).(cn|com|org|net|club|net|fr|tw|hk|eu|info|me)",
                 "regexp:(.*.||)(miaozhen|cnzz|talkingdata|umeng).(cn|com)",
-                "regexp:(.*.||)(pincong).(rocks)",
-                "regexp:(.*.||)(taobao).(com)"
+                "regexp:(.*.||)(pincong).(rocks)"
             ]
         },
         {
