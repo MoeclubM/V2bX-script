@@ -234,18 +234,6 @@ EOF
         first_install=false
     fi
 
-    if [[ ! -f /etc/V2bX/dns.json ]]; then
-        cp dns.json /etc/V2bX/
-    fi
-    if [[ ! -f /etc/V2bX/route.json ]]; then
-        cp route.json /etc/V2bX/
-    fi
-    if [[ ! -f /etc/V2bX/custom_outbound.json ]]; then
-        cp custom_outbound.json /etc/V2bX/
-    fi
-    if [[ ! -f /etc/V2bX/custom_inbound.json ]]; then
-        cp custom_inbound.json /etc/V2bX/
-    fi
     curl -o /usr/bin/V2bX -Ls https://raw.githubusercontent.com/MoeclubM/V2bX-script/master/V2bX.sh
     chmod +x /usr/bin/V2bX
     if [ ! -L /usr/bin/v2bx ]; then
