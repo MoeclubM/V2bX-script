@@ -5,10 +5,6 @@ A V2board node server based on Sing-Box.
 
 Find the source code here: [MoeclubM/V2bX](https://github.com/MoeclubM/V2bX)
 
-# 详细使用教程
-
-[教程](https://v2bx.v-50.me/)
-
 # 一键安装
 
 ```
