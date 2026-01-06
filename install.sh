@@ -245,7 +245,7 @@ EOF
     echo -e ""
     echo "V2bX 管理脚本使用方法(可使用V2bX与v2bx): "
     echo "------------------------------------------"
-    echo "V2bX              - 显示管理菜单 (功能更多)"
+    echo "V2bX              - 显示管理菜单"
     echo "V2bX start        - 启动 V2bX"
     echo "V2bX stop         - 停止 V2bX"
     echo "V2bX restart      - 重启 V2bX"
