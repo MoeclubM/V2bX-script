@@ -155,28 +155,6 @@ generate_config_file() {
         fi
     done
 
-    # 初始化核心配置数组
-    cores_config="["
-
-    # 添加sing核心配置
-    cores_config+="
-    {
-        \"Log\": {
-            \"Level\": \"error\",
-            \"Timestamp\": true
-        },
-        \"NTP\": {
-            \"Enable\": false,
-            \"Server\": \"time.apple.com\",
-            \"ServerPort\": 0
-        },
-        \"OriginalPath\": \"/etc/V2bX/sing_origin.json\"
-    },"
-
-    # 移除最后一个逗号并关闭数组
-    cores_config+="]"
-    cores_config=$(echo "$cores_config" | sed 's/},]$/}]/')
-
     # 切换到配置文件目录
     cd /etc/V2bX
     
@@ -189,14 +167,11 @@ generate_config_file() {
     cat <<EOF > /etc/V2bX/config.json
 {
     "Log": {
-        "Level": "error",
-        "Output": ""
+        "Level": "info"
     },
-    "Cores": $cores_config,
     "Nodes": [$formatted_nodes_config]
 }
 EOF
-    
 
     ipv6_support=$(check_ipv6_support)
     dnsstrategy="ipv4_only"
@@ -246,6 +221,7 @@ EOF
         }
     }
 EOF
+
     echo -e "${green}V2bX 配置文件生成完成,正在重新启动服务${plain}"
     v2bx restart
 }
