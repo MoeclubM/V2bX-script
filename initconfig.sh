@@ -205,50 +205,46 @@ EOF
     fi
     # 创建 sing_origin.json 文件
     cat <<EOF > /etc/V2bX/sing_origin.json
-{
-  "dns": {
-    "servers": [
-      {
-        "tag": "cf",
-        "address": "1.1.1.1"
-      }
-    ],
-    "strategy": "$dnsstrategy"
-  },
-  "outbounds": [
     {
-      "tag": "direct",
-      "type": "direct",
-      "domain_resolver": {
-        "server": "cf",
-        "strategy": "$dnsstrategy"
-      }
-    },
-    {
-      "type": "block",
-      "tag": "block"
+        "dns": {
+            "servers": [
+                {
+                "tag": "cf",
+                "address": "1.1.1.1"
+                }
+            ],
+            "strategy": "$dnsstrategy"
+        },
+        "outbounds": [
+            {
+                "tag": "direct",
+                "type": "direct"
+            },
+            {
+                "type": "block",
+                "tag": "block"
+            }
+        ],
+        "route": {
+            "rules": [
+                {
+                "ip_is_private": true,
+                "outbound": "block"
+                },
+                {
+                "outbound": "direct",
+                "network": [
+                    "udp","tcp"
+                ]
+                }
+            ]
+        },
+        "experimental": {
+            "cache_file": {
+                "enabled": true
+            }
+        }
     }
-  ],
-  "route": {
-    "rules": [
-      {
-        "ip_is_private": true,
-        "outbound": "block"
-      },
-      {
-        "outbound": "direct",
-        "network": [
-          "udp","tcp"
-        ]
-      }
-    ]
-  },
-  "experimental": {
-    "cache_file": {
-      "enabled": true
-    }
-  }
-}
 EOF
     echo -e "${green}V2bX 配置文件生成完成,正在重新启动服务${plain}"
     v2bx restart
