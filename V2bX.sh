@@ -630,6 +630,7 @@ EOF
       "type": "direct",
       "domain_resolver": 
       {
+        "server": "cf",
         "strategy": "$dnsstrategy"
       }
     },
