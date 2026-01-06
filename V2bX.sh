@@ -493,7 +493,6 @@ add_node_config() {
     node_config=""
     node_config=$(cat <<EOF
 {
-            "Core": "$core",
             "ApiHost": "$ApiHost",
             "ApiKey": "$ApiKey",
             "NodeID": $NodeID,
@@ -566,7 +565,6 @@ generate_config_file() {
     # 初始化核心配置数组
     cores_config="[
     {
-        \"Type\": \"sing\",
         \"Log\": {
             \"Level\": \"error\",
             \"Timestamp\": true
