@@ -158,8 +158,6 @@ install_V2bX() {
     rm V2bX-linux.zip -f
     chmod +x V2bX
     mkdir /etc/V2bX/ -p
-    cp geoip.dat /etc/V2bX/
-    cp geosite.dat /etc/V2bX/
     if [[ x"${release}" == x"alpine" ]]; then
         rm /etc/init.d/V2bX -f
         cat <<EOF > /etc/init.d/V2bX
