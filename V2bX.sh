@@ -444,6 +444,7 @@ prompt_cert_config() {
 }
 
 add_traditional_node_config() {
+    echo -e "${yellow}当前为旧版传统 Node 兼容模式，需保留本地节点参数与证书配置。${plain}"
     while true; do
         read -rp "请输入节点Node ID：" NodeID
         if [[ "$NodeID" =~ ^[0-9]+$ ]]; then
@@ -497,6 +498,26 @@ add_traditional_node_config() {
         prompt_cert_config "$istls"
     fi
 
+    cert_config=""
+    if [[ "$certmode" != "none" ]]; then
+        cert_config=$(cat <<EOF
+,
+            "CertConfig": {
+                "CertMode": "$certmode",
+                "RejectUnknownSni": false,
+                "CertDomain": "$certdomain",
+                "CertFile": "/etc/V2bX/fullchain.cer",
+                "KeyFile": "/etc/V2bX/cert.key",
+                "Email": "v2bx@github.com",
+                "Provider": "cloudflare",
+                "DNSEnv": {
+                    "EnvName": "env1"
+                }
+            }
+EOF
+)
+    fi
+
     node_config=$(cat <<EOF
 {
             "ApiHost": "$ApiHost",
@@ -509,28 +530,16 @@ add_traditional_node_config() {
             "DeviceOnlineMinTraffic": 200,
             "ReportMinTraffic": 0,
             "EnableTFO": $fastopen,
-            "EnableSniff": true,
-            "CertConfig": {
-                "CertMode": "$certmode",
-                "RejectUnknownSni": false,
-                "CertDomain": "$certdomain",
-                "CertFile": "/etc/V2bX/fullchain.cer",
-                "KeyFile": "/etc/V2bX/cert.key",
-                "Email": "v2bx@github.com",
-                "Provider": "cloudflare",
-                "DNSEnv": {
-                    "EnvName": "env1"
-                }
-            }
+            "EnableSniff": true$cert_config
         },
 EOF
 )
     v1_nodes_config+=("$node_config")
 }
 
-add_server_config() {
+add_machine_config() {
     while true; do
-        read -rp "请输入Server Machine ID：" MachineID
+        read -rp "请输入Machine ID：" MachineID
         if [[ "$MachineID" =~ ^[0-9]+$ ]]; then
             break
         else
@@ -538,35 +547,11 @@ add_server_config() {
         fi
     done
 
-    read -rp "该Server是否需要证书配置？(y/n)" istls
-    certmode="none"
-    certdomain="example.com"
-    prompt_cert_config "$istls"
-
     machine_config=$(cat <<EOF
 {
             "ApiHost": "$ApiHost",
             "ApiKey": "$ApiKey",
-            "MachineID": $MachineID,
-            "Timeout": 30,
-            "ListenIP": "$listen_ip",
-            "SendIP": "0.0.0.0",
-            "DeviceOnlineMinTraffic": 200,
-            "ReportMinTraffic": 0,
-            "EnableTFO": false,
-            "EnableSniff": true,
-            "CertConfig": {
-                "CertMode": "$certmode",
-                "RejectUnknownSni": false,
-                "CertDomain": "$certdomain",
-                "CertFile": "/etc/V2bX/fullchain.cer",
-                "KeyFile": "/etc/V2bX/cert.key",
-                "Email": "v2bx@github.com",
-                "Provider": "cloudflare",
-                "DNSEnv": {
-                    "EnvName": "env1"
-                }
-            }
+            "MachineID": $MachineID
         },
 EOF
 )
@@ -575,13 +560,13 @@ EOF
 
 add_config_entry() {
     echo -e "${yellow}请选择添加方式：${plain}"
-    echo -e "${green}1. Server（v2 machine，自动同步）${plain}"
-    echo -e "${green}2. 传统Node${plain}"
+    echo -e "${green}1. 新版 Machine（推荐，节点/证书/ECH 均由面板在线下发）${plain}"
+    echo -e "${green}2. 传统 Node（兼容模式）${plain}"
     read -rp "请输入：" config_type
     case "$config_type" in
-        1 ) add_server_config ;;
+        1 ) add_machine_config ;;
         2 ) add_traditional_node_config ;;
-        * ) add_traditional_node_config ;;
+        * ) add_machine_config ;;
     esac
 }
 
@@ -590,8 +575,10 @@ generate_config_file() {
     echo -e "${red}请阅读以下注意事项：${plain}"
     echo -e "${red}1. 生成的配置文件会保存到 /etc/V2bX/config.json${plain}"
     echo -e "${red}2. 原来的配置文件会保存到 /etc/V2bX/config.json.bak${plain}"
-    echo -e "${red}3. 目前仅部分支持TLS${plain}"
-    echo -e "${red}4. 生成的配置文件自带审计，确定继续? (y/n)${plain}"
+    echo -e "${red}3. 新版默认使用 Machine 模式，仅需填写面板地址、API Key、Machine ID${plain}"
+    echo -e "${red}4. 新版节点参数、证书与 ECH 均由面板在线下发；传统 Node 仅作兼容${plain}"
+    echo -e "${red}5. 如需兼容旧版 API，请在添加方式中选择传统 Node${plain}"
+    echo -e "${red}6. 生成的配置文件自带审计，确定继续? (y/n)${plain}"
     read -rp "请输入：" continue_prompt
     if [[ "$continue_prompt" =~ ^[Nn][Oo]? ]]; then
         exit 0
@@ -609,22 +596,22 @@ generate_config_file() {
 
     while true; do
         if [ "$first_entry" = true ]; then
-            read -rp "请输入机场网址(https://example.com)：" ApiHost
+            read -rp "请输入面板地址(https://example.com)：" ApiHost
             read -rp "请输入面板对接API Key：" ApiKey
-            read -rp "是否设置固定的机场网址和API Key？(y/n)" fixed_api
+            read -rp "是否固定当前面板地址与API Key，以便连续添加多个Machine？(y/n)" fixed_api
             if [ "$fixed_api" = "y" ] || [ "$fixed_api" = "Y" ]; then
                 fixed_api_info=true
-                echo -e "${red}成功固定地址${plain}"
+                echo -e "${green}已固定当前面板地址与API Key${plain}"
             fi
         else
             if [ "$fixed_api_info" = false ]; then
-                read -rp "请输入机场网址：" ApiHost
+                read -rp "请输入面板地址：" ApiHost
                 read -rp "请输入面板对接API Key：" ApiKey
             fi
         fi
         add_config_entry
         first_entry=false
-        read -rp "是否继续添加配置？(回车继续，输入n或no退出)" continue_adding_node
+        read -rp "是否继续添加 Machine 或兼容 Node？(回车继续，输入n或no退出)" continue_adding_node
         if [[ "$continue_adding_node" =~ ^[Nn][Oo]? ]]; then
             break
         fi
@@ -739,7 +726,7 @@ show_usage() {
     echo "V2bX disable      - 取消 V2bX 开机自启"
     echo "V2bX log          - 查看 V2bX 日志"
     echo "V2bX x25519       - 生成 x25519 密钥"
-    echo "V2bX generate     - 生成 V2bX 配置文件"
+    echo "V2bX generate     - 生成 V2bX 配置文件（默认新版 Machine）"
     echo "V2bX update       - 更新 V2bX"
     echo "V2bX update x.x.x - 安装 V2bX 指定版本"
     echo "V2bX install      - 安装 V2bX"
@@ -770,7 +757,7 @@ show_menu() {
   ${green}11.${plain} 查看 V2bX 版本
   ${green}12.${plain} 生成 X25519 密钥
   ${green}13.${plain} 升级 V2bX 维护脚本
-  ${green}14.${plain} 生成 V2bX 配置文件
+  ${green}14.${plain} 生成 V2bX 配置文件（默认新版 Machine）
   ${green}15.${plain} 退出脚本
  "
  #后续更新可加入上方字符串中
