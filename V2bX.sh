@@ -418,14 +418,36 @@ show_V2bX_version() {
     fi
 }
 
-add_node_config() {
-    core="sing"
-    core_sing=true
+prompt_cert_config() {
+    certmode="none"
+    certdomain="example.com"
+    if [[ "$1" != "y" && "$1" != "Y" ]]; then
+        return 0
+    fi
+    echo -e "${yellow}请选择证书申请模式：${plain}"
+    echo -e "${green}1. http模式自动申请，节点域名已正确解析${plain}"
+    echo -e "${green}2. dns模式自动申请，需填入正确域名服务商API参数${plain}"
+    echo -e "${green}3. self模式，自签证书或提供已有证书文件${plain}"
+    read -rp "请输入：" certmode
+    case "$certmode" in
+        1 ) certmode="http" ;;
+        2 ) certmode="dns" ;;
+        3 ) certmode="self" ;;
+        * ) certmode="none" ;;
+    esac
+    if [[ "$certmode" != "none" ]]; then
+        read -rp "请输入节点证书域名(example.com)：" certdomain
+    fi
+    if [[ "$certmode" != "http" && "$certmode" != "none" ]]; then
+        echo -e "${red}请手动修改配置文件后重启V2bX！${plain}"
+    fi
+}
+
+add_traditional_node_config() {
     while true; do
         read -rp "请输入节点Node ID：" NodeID
-        # 判断NodeID是否为正整数
         if [[ "$NodeID" =~ ^[0-9]+$ ]]; then
-            break  # 输入正确，退出循环
+            break
         else
             echo "错误：请输入正确的数字作为Node ID。"
         fi
@@ -456,41 +478,25 @@ add_node_config() {
     esac
 
     fastopen=true
+    istls="n"
+    isreality="n"
     if [ "$NodeType" == "vless" ]; then
         read -rp "请选择是否为reality节点？(y/n)" isreality
-    elif [ "$NodeType" == "hysteria" ] || [ "$NodeType" == "hysteria2" ] || [ "$NodeType" == "tuic" ] || [ "$NodeType" == "anytls" ] || [ "$NodeType" == "naive" ]; then
+    elif [ "$NodeType" == "hysteria" ] || [ "$NodeType" == "hysteria2" ] || [ "$NodeType" == "tuic" ] || [ "$NodeType" == "anytls" ] || [ "$NodeType" == "naive" ] || [ "$NodeType" == "trojan" ]; then
         fastopen=false
         istls="y"
     fi
 
-    if [[ "$isreality" != "y" && "$isreality" != "Y" &&  "$istls" != "y" ]]; then
+    if [[ "$isreality" != "y" && "$isreality" != "Y" && "$istls" != "y" ]]; then
         read -rp "请选择是否进行TLS配置？(y/n)" istls
     fi
 
     certmode="none"
     certdomain="example.com"
-    if [[ "$isreality" != "y" && "$isreality" != "Y" && ( "$istls" == "y" || "$istls" == "Y" ) ]]; then
-        echo -e "${yellow}请选择证书申请模式：${plain}"
-        echo -e "${green}1. http模式自动申请，节点域名已正确解析${plain}"
-        echo -e "${green}2. dns模式自动申请，需填入正确域名服务商API参数${plain}"
-        echo -e "${green}3. self模式，自签证书或提供已有证书文件${plain}"
-        read -rp "请输入：" certmode
-        case "$certmode" in
-            1 ) certmode="http" ;;
-            2 ) certmode="dns" ;;
-            3 ) certmode="self" ;;
-        esac
-        read -rp "请输入节点证书域名(example.com)：" certdomain
-        if [ "$certmode" != "http" ]; then
-            echo -e "${red}请手动修改配置文件后重启V2bX！${plain}"
-        fi
+    if [[ "$isreality" != "y" && "$isreality" != "Y" ]]; then
+        prompt_cert_config "$istls"
     fi
-    ipv6_support=$(check_ipv6_support)
-    listen_ip="0.0.0.0"
-    if [ "$ipv6_support" -eq 1 ]; then
-        listen_ip="::"
-    fi
-    node_config=""
+
     node_config=$(cat <<EOF
 {
             "ApiHost": "$ApiHost",
@@ -501,9 +507,9 @@ add_node_config() {
             "ListenIP": "$listen_ip",
             "SendIP": "0.0.0.0",
             "DeviceOnlineMinTraffic": 200,
-            "MinReportTraffic": 0,
-            "TCPFastOpen": $fastopen,
-            "SniffEnabled": true,
+            "ReportMinTraffic": 0,
+            "EnableTFO": $fastopen,
+            "EnableSniff": true,
             "CertConfig": {
                 "CertMode": "$certmode",
                 "RejectUnknownSni": false,
@@ -519,7 +525,64 @@ add_node_config() {
         },
 EOF
 )
-    nodes_config+=("$node_config")
+    v1_nodes_config+=("$node_config")
+}
+
+add_server_config() {
+    while true; do
+        read -rp "请输入Server Machine ID：" MachineID
+        if [[ "$MachineID" =~ ^[0-9]+$ ]]; then
+            break
+        else
+            echo "错误：请输入正确的数字作为 Machine ID。"
+        fi
+    done
+
+    read -rp "该Server是否需要证书配置？(y/n)" istls
+    certmode="none"
+    certdomain="example.com"
+    prompt_cert_config "$istls"
+
+    machine_config=$(cat <<EOF
+{
+            "ApiHost": "$ApiHost",
+            "ApiKey": "$ApiKey",
+            "MachineID": $MachineID,
+            "Timeout": 30,
+            "ListenIP": "$listen_ip",
+            "SendIP": "0.0.0.0",
+            "DeviceOnlineMinTraffic": 200,
+            "ReportMinTraffic": 0,
+            "EnableTFO": false,
+            "EnableSniff": true,
+            "CertConfig": {
+                "CertMode": "$certmode",
+                "RejectUnknownSni": false,
+                "CertDomain": "$certdomain",
+                "CertFile": "/etc/V2bX/fullchain.cer",
+                "KeyFile": "/etc/V2bX/cert.key",
+                "Email": "v2bx@github.com",
+                "Provider": "cloudflare",
+                "DNSEnv": {
+                    "EnvName": "env1"
+                }
+            }
+        },
+EOF
+)
+    v2_machines_config+=("$machine_config")
+}
+
+add_config_entry() {
+    echo -e "${yellow}请选择添加方式：${plain}"
+    echo -e "${green}1. Server（v2 machine，自动同步）${plain}"
+    echo -e "${green}2. 传统Node${plain}"
+    read -rp "请输入：" config_type
+    case "$config_type" in
+        1 ) add_server_config ;;
+        2 ) add_traditional_node_config ;;
+        * ) add_traditional_node_config ;;
+    esac
 }
 
 generate_config_file() {
@@ -534,13 +597,18 @@ generate_config_file() {
         exit 0
     fi
     
-    nodes_config=()
-    first_node=true
+    v1_nodes_config=()
+    v2_machines_config=()
     fixed_api_info=false
-    check_api=false
-    
+    first_entry=true
+    ipv6_support=$(check_ipv6_support)
+    listen_ip="0.0.0.0"
+    if [ "$ipv6_support" -eq 1 ]; then
+        listen_ip="::"
+    fi
+
     while true; do
-        if [ "$first_node" = true ]; then
+        if [ "$first_entry" = true ]; then
             read -rp "请输入机场网址(https://example.com)：" ApiHost
             read -rp "请输入面板对接API Key：" ApiKey
             read -rp "是否设置固定的机场网址和API Key？(y/n)" fixed_api
@@ -548,22 +616,21 @@ generate_config_file() {
                 fixed_api_info=true
                 echo -e "${red}成功固定地址${plain}"
             fi
-            first_node=false
-            add_node_config
         else
-            read -rp "是否继续添加节点配置？(回车继续，输入n或no退出)" continue_adding_node
-            if [[ "$continue_adding_node" =~ ^[Nn][Oo]? ]]; then
-                break
-            elif [ "$fixed_api_info" = false ]; then
+            if [ "$fixed_api_info" = false ]; then
                 read -rp "请输入机场网址：" ApiHost
                 read -rp "请输入面板对接API Key：" ApiKey
             fi
-            add_node_config
+        fi
+        add_config_entry
+        first_entry=false
+        read -rp "是否继续添加配置？(回车继续，输入n或no退出)" continue_adding_node
+        if [[ "$continue_adding_node" =~ ^[Nn][Oo]? ]]; then
+            break
         fi
     done
 
-    # 初始化核心配置数组
-    cores_config="[
+    cores_config='[
     {
         \"Log\": {
             \"Level\": \"error\",
@@ -575,21 +642,18 @@ generate_config_file() {
             \"ServerPort\": 0
         },
         \"OriginalPath\": \"/etc/V2bX/sing_origin.json\"
-    },"
+    }
+]'
 
-    # 移除最后一个逗号并关闭数组
-    cores_config+="]"
-    cores_config=$(echo "$cores_config" | sed 's/},]$/}]/')
-
-    # 切换到配置文件目录
     cd /etc/V2bX
-    
-    # 备份旧的配置文件
-    mv config.json config.json.bak
-    nodes_config_str="${nodes_config[*]}"
-    formatted_nodes_config="${nodes_config_str%,}"
+    if [[ -f config.json ]]; then
+        mv config.json config.json.bak
+    fi
+    v1_nodes_config_str="${v1_nodes_config[*]}"
+    formatted_v1_nodes_config="${v1_nodes_config_str%,}"
+    v2_machines_config_str="${v2_machines_config[*]}"
+    formatted_v2_machines_config="${v2_machines_config_str%,}"
 
-    # 创建 config.json 文件
     cat <<EOF > /etc/V2bX/config.json
 {
     "Log": {
@@ -597,11 +661,15 @@ generate_config_file() {
         "Output": ""
     },
     "Cores": $cores_config,
-    "Nodes": [$formatted_nodes_config]
+    "Nodes": {
+        "V1": [$formatted_v1_nodes_config],
+        "V2": {
+            "Nodes": [],
+            "Machines": [$formatted_v2_machines_config]
+        }
+    }
 }
 EOF
-    
-    # 不再创建 custom_outbound.json、custom_inbound.json 和 route.json 文件
 
     ipv6_support=$(check_ipv6_support)
     dnsstrategy="ipv4_only"

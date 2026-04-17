@@ -123,6 +123,81 @@ check_status() {
     fi
 }
 
+write_default_config_files() {
+    cat <<EOF > /etc/V2bX/config.json
+{
+    "Log": {
+        "Level": "info",
+        "Output": ""
+    },
+    "Cores": [
+        {
+            "Log": {
+                "Level": "info",
+                "Timestamp": true
+            },
+            "NTP": {
+                "Enable": false,
+                "Server": "time.apple.com",
+                "ServerPort": 0
+            },
+            "OriginalPath": "/etc/V2bX/sing_origin.json"
+        }
+    ],
+    "Nodes": {
+        "V1": [],
+        "V2": {
+            "Nodes": [],
+            "Machines": []
+        }
+    }
+}
+EOF
+    cat <<EOF > /etc/V2bX/sing_origin.json
+{
+  "dns": {
+    "servers": [
+      {
+        "tag": "cf",
+        "address": "1.1.1.1"
+      }
+    ],
+    "strategy": "ipv4_only"
+  },
+  "outbounds": [
+    {
+      "tag": "direct",
+      "type": "direct"
+    },
+    {
+      "type": "block",
+      "tag": "block"
+    }
+  ],
+  "route": {
+    "rules": [
+      {
+        "ip_is_private": true,
+        "outbound": "block"
+      },
+      {
+        "outbound": "direct",
+        "network": [
+          "udp",
+          "tcp"
+        ]
+      }
+    ]
+  },
+  "experimental": {
+    "cache_file": {
+      "enabled": true
+    }
+  }
+}
+EOF
+}
+
 install_V2bX() {
     if [[ -e /usr/local/V2bX/ ]]; then
         rm -rf /usr/local/V2bX/
@@ -211,11 +286,12 @@ EOF
     fi
 
     if [[ ! -f /etc/V2bX/config.json ]]; then
-        cp config.json /etc/V2bX/
+        write_default_config_files
         echo -e ""
         echo -e "全新安装，请先参看教程：https://v2bx.v-50.me/，配置必要的内容"
         first_install=true
     else
+        echo -e "检测到已有配置文件，本次将保留现有配置并直接更新 V2bX"
         if [[ x"${release}" == x"alpine" ]]; then
             service V2bX start
         else
