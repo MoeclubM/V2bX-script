@@ -145,11 +145,10 @@ write_default_config_files() {
         }
     ],
     "Nodes": {
-        "V1": [],
-        "V2": {
-            "Nodes": [],
-            "Machines": []
-        }
+        "V1": []
+    },
+    "V2": {
+        "Machines": []
     }
 }
 EOF

@@ -660,11 +660,10 @@ generate_config_file() {
         }
     ],
     "Nodes": {
-        "V1": [$formatted_v1_nodes_config],
-        "V2": {
-            "Nodes": [],
-            "Machines": [$formatted_v2_machines_config]
-        }
+        "V1": [$formatted_v1_nodes_config]
+    },
+    "V2": {
+        "Machines": [$formatted_v2_machines_config]
     }
 }
 EOF
