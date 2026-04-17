@@ -630,21 +630,6 @@ generate_config_file() {
         fi
     done
 
-    cores_config='[
-    {
-        \"Log\": {
-            \"Level\": \"error\",
-            \"Timestamp\": true
-        },
-        \"NTP\": {
-            \"Enable\": false,
-            \"Server\": \"time.apple.com\",
-            \"ServerPort\": 0
-        },
-        \"OriginalPath\": \"/etc/V2bX/sing_origin.json\"
-    }
-]'
-
     cd /etc/V2bX
     if [[ -f config.json ]]; then
         mv config.json config.json.bak
@@ -660,7 +645,20 @@ generate_config_file() {
         "Level": "error",
         "Output": ""
     },
-    "Cores": $cores_config,
+    "Cores": [
+        {
+            "Log": {
+                "Level": "error",
+                "Timestamp": true
+            },
+            "NTP": {
+                "Enable": false,
+                "Server": "time.apple.com",
+                "ServerPort": 0
+            },
+            "OriginalPath": "/etc/V2bX/sing_origin.json"
+        }
+    ],
     "Nodes": {
         "V1": [$formatted_v1_nodes_config],
         "V2": {
