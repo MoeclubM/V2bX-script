@@ -144,12 +144,8 @@ write_default_config_files() {
             "OriginalPath": "/etc/V2bX/sing_origin.json"
         }
     ],
-    "Nodes": {
-        "V1": []
-    },
-    "V2": {
-        "Machines": []
-    }
+    "Nodes": [],
+    "Machines": []
 }
 EOF
     cat <<EOF > /etc/V2bX/sing_origin.json

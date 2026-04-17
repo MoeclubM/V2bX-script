@@ -659,12 +659,8 @@ generate_config_file() {
             "OriginalPath": "/etc/V2bX/sing_origin.json"
         }
     ],
-    "Nodes": {
-        "V1": [$formatted_v1_nodes_config]
-    },
-    "V2": {
-        "Machines": [$formatted_v2_machines_config]
-    }
+    "Nodes": [$formatted_v1_nodes_config],
+    "Machines": [$formatted_v2_machines_config]
 }
 EOF
 
