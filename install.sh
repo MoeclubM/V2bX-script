@@ -144,7 +144,6 @@ write_default_config_files() {
             "OriginalPath": "/etc/V2bX/sing_origin.json"
         }
     ],
-    "Nodes": [],
     "Machines": []
 }
 EOF
@@ -323,7 +322,7 @@ EOF
     echo "V2bX disable      - 取消 V2bX 开机自启"
     echo "V2bX log          - 查看 V2bX 日志"
     echo "V2bX x25519       - 生成 x25519 密钥"
-    echo "V2bX generate     - 生成 V2bX 配置文件（默认新版 Machine）"
+    echo "V2bX generate     - 生成 V2bX 配置文件"
     echo "V2bX update       - 更新 V2bX"
     echo "V2bX update x.x.x - 更新 V2bX 指定版本"
     echo "V2bX install      - 安装 V2bX"
@@ -332,7 +331,7 @@ EOF
     echo "------------------------------------------"
     # 首次安装询问是否生成配置文件
     if [[ $first_install == true ]]; then
-        read -rp "检测到你为第一次安装V2bX，是否自动生成配置文件？默认推荐新版 Machine，传统 Node 仅用于兼容。(y/n): " if_generate
+        read -rp "检测到你为第一次安装V2bX，是否自动生成配置文件？(y/n): " if_generate
         if [[ $if_generate == [Yy] ]]; then
             V2bX generate
         fi

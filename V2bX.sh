@@ -418,125 +418,6 @@ show_V2bX_version() {
     fi
 }
 
-prompt_cert_config() {
-    certmode="none"
-    certdomain="example.com"
-    if [[ "$1" != "y" && "$1" != "Y" ]]; then
-        return 0
-    fi
-    echo -e "${yellow}请选择证书申请模式：${plain}"
-    echo -e "${green}1. http模式自动申请，节点域名已正确解析${plain}"
-    echo -e "${green}2. dns模式自动申请，需填入正确域名服务商API参数${plain}"
-    echo -e "${green}3. self模式，自签证书或提供已有证书文件${plain}"
-    read -rp "请输入：" certmode
-    case "$certmode" in
-        1 ) certmode="http" ;;
-        2 ) certmode="dns" ;;
-        3 ) certmode="self" ;;
-        * ) certmode="none" ;;
-    esac
-    if [[ "$certmode" != "none" ]]; then
-        read -rp "请输入节点证书域名(example.com)：" certdomain
-    fi
-    if [[ "$certmode" != "http" && "$certmode" != "none" ]]; then
-        echo -e "${red}请手动修改配置文件后重启V2bX！${plain}"
-    fi
-}
-
-add_traditional_node_config() {
-    echo -e "${yellow}当前为旧版传统 Node 兼容模式，需保留本地节点参数与证书配置。${plain}"
-    while true; do
-        read -rp "请输入节点Node ID：" NodeID
-        if [[ "$NodeID" =~ ^[0-9]+$ ]]; then
-            break
-        else
-            echo "错误：请输入正确的数字作为Node ID。"
-        fi
-    done
-
-    echo -e "${yellow}请选择节点传输协议：${plain}"
-    echo -e "${green}1. Shadowsocks${plain}"
-    echo -e "${green}2. Vless${plain}"
-    echo -e "${green}3. Vmess${plain}"
-    echo -e "${green}4. Hysteria${plain}"
-    echo -e "${green}5. Hysteria2${plain}"
-    echo -e "${green}6. Trojan${plain}"
-    echo -e "${green}7. Tuic${plain}"
-    echo -e "${green}8. AnyTLS${plain}"
-    echo -e "${green}9. Naive${plain}"
-    read -rp "请输入：" NodeType
-    case "$NodeType" in
-        1 ) NodeType="shadowsocks" ;;
-        2 ) NodeType="vless" ;;
-        3 ) NodeType="vmess" ;;
-        4 ) NodeType="hysteria" ;;
-        5 ) NodeType="hysteria2" ;;
-        6 ) NodeType="trojan" ;;
-        7 ) NodeType="tuic" ;;
-        8 ) NodeType="anytls" ;;
-        9 ) NodeType="naive" ;;
-        * ) NodeType="shadowsocks" ;;
-    esac
-
-    fastopen=true
-    istls="n"
-    isreality="n"
-    if [ "$NodeType" == "vless" ]; then
-        read -rp "请选择是否为reality节点？(y/n)" isreality
-    elif [ "$NodeType" == "hysteria" ] || [ "$NodeType" == "hysteria2" ] || [ "$NodeType" == "tuic" ] || [ "$NodeType" == "anytls" ] || [ "$NodeType" == "naive" ] || [ "$NodeType" == "trojan" ]; then
-        fastopen=false
-        istls="y"
-    fi
-
-    if [[ "$isreality" != "y" && "$isreality" != "Y" && "$istls" != "y" ]]; then
-        read -rp "请选择是否进行TLS配置？(y/n)" istls
-    fi
-
-    certmode="none"
-    certdomain="example.com"
-    if [[ "$isreality" != "y" && "$isreality" != "Y" ]]; then
-        prompt_cert_config "$istls"
-    fi
-
-    cert_config=""
-    if [[ "$certmode" != "none" ]]; then
-        cert_config=$(cat <<EOF
-,
-            "CertConfig": {
-                "CertMode": "$certmode",
-                "RejectUnknownSni": false,
-                "CertDomain": "$certdomain",
-                "CertFile": "/etc/V2bX/fullchain.cer",
-                "KeyFile": "/etc/V2bX/cert.key",
-                "Email": "v2bx@github.com",
-                "Provider": "cloudflare",
-                "DNSEnv": {
-                    "EnvName": "env1"
-                }
-            }
-EOF
-)
-    fi
-
-    node_config=$(cat <<EOF
-{
-            "ApiHost": "$ApiHost",
-            "ApiKey": "$ApiKey",
-            "NodeID": $NodeID,
-            "NodeType": "$NodeType",
-            "Timeout": 30,
-            "ListenIP": "$listen_ip",
-            "SendIP": "0.0.0.0",
-            "DeviceOnlineMinTraffic": 200,
-            "ReportMinTraffic": 0,
-            "EnableTFO": $fastopen,
-            "EnableSniff": true$cert_config
-        },
-EOF
-)
-    v1_nodes_config+=("$node_config")
-}
-
 add_machine_config() {
     while true; do
         read -rp "请输入Machine ID：" MachineID
@@ -555,19 +436,7 @@ add_machine_config() {
         },
 EOF
 )
-    v2_machines_config+=("$machine_config")
-}
-
-add_config_entry() {
-    echo -e "${yellow}请选择添加方式：${plain}"
-    echo -e "${green}1. 新版 Machine（推荐，节点/证书/ECH 均由面板在线下发）${plain}"
-    echo -e "${green}2. 传统 Node（兼容模式）${plain}"
-    read -rp "请输入：" config_type
-    case "$config_type" in
-        1 ) add_machine_config ;;
-        2 ) add_traditional_node_config ;;
-        * ) add_machine_config ;;
-    esac
+    machine_configs+=("$machine_config")
 }
 
 generate_config_file() {
@@ -575,25 +444,17 @@ generate_config_file() {
     echo -e "${red}请阅读以下注意事项：${plain}"
     echo -e "${red}1. 生成的配置文件会保存到 /etc/V2bX/config.json${plain}"
     echo -e "${red}2. 原来的配置文件会保存到 /etc/V2bX/config.json.bak${plain}"
-    echo -e "${red}3. 新版默认使用 Machine 模式，仅需填写面板地址、API Key、Machine ID${plain}"
-    echo -e "${red}4. 新版节点参数、证书与 ECH 均由面板在线下发；传统 Node 仅作兼容${plain}"
-    echo -e "${red}5. 如需兼容旧版 API，请在添加方式中选择传统 Node${plain}"
-    echo -e "${red}6. 生成的配置文件自带审计，确定继续? (y/n)${plain}"
+    echo -e "${red}3. 当前版本仅支持 Machine 模式，仅需填写面板地址、API Key、Machine ID${plain}"
+    echo -e "${red}4. 节点参数、证书与 ECH 均由面板在线下发${plain}"
+    echo -e "${red}5. 生成的配置文件自带审计，确定继续? (y/n)${plain}"
     read -rp "请输入：" continue_prompt
     if [[ "$continue_prompt" =~ ^[Nn][Oo]? ]]; then
         exit 0
     fi
     
-    v1_nodes_config=()
-    v2_machines_config=()
+    machine_configs=()
     fixed_api_info=false
     first_entry=true
-    ipv6_support=$(check_ipv6_support)
-    listen_ip="0.0.0.0"
-    if [ "$ipv6_support" -eq 1 ]; then
-        listen_ip="::"
-    fi
-
     while true; do
         if [ "$first_entry" = true ]; then
             read -rp "请输入面板地址(https://example.com)：" ApiHost
@@ -609,10 +470,10 @@ generate_config_file() {
                 read -rp "请输入面板对接API Key：" ApiKey
             fi
         fi
-        add_config_entry
+        add_machine_config
         first_entry=false
-        read -rp "是否继续添加 Machine 或兼容 Node？(回车继续，输入n或no退出)" continue_adding_node
-        if [[ "$continue_adding_node" =~ ^[Nn][Oo]? ]]; then
+        read -rp "是否继续添加 Machine？(回车继续，输入n或no退出)" continue_adding_machine
+        if [[ "$continue_adding_machine" =~ ^[Nn][Oo]? ]]; then
             break
         fi
     done
@@ -621,10 +482,8 @@ generate_config_file() {
     if [[ -f config.json ]]; then
         mv config.json config.json.bak
     fi
-    v1_nodes_config_str="${v1_nodes_config[*]}"
-    formatted_v1_nodes_config="${v1_nodes_config_str%,}"
-    v2_machines_config_str="${v2_machines_config[*]}"
-    formatted_v2_machines_config="${v2_machines_config_str%,}"
+    machine_configs_str="${machine_configs[*]}"
+    formatted_machine_configs="${machine_configs_str%,}"
 
     cat <<EOF > /etc/V2bX/config.json
 {
@@ -646,8 +505,7 @@ generate_config_file() {
             "OriginalPath": "/etc/V2bX/sing_origin.json"
         }
     ],
-    "Nodes": [$formatted_v1_nodes_config],
-    "Machines": [$formatted_v2_machines_config]
+    "Machines": [$formatted_machine_configs]
 }
 EOF
 
@@ -726,7 +584,7 @@ show_usage() {
     echo "V2bX disable      - 取消 V2bX 开机自启"
     echo "V2bX log          - 查看 V2bX 日志"
     echo "V2bX x25519       - 生成 x25519 密钥"
-    echo "V2bX generate     - 生成 V2bX 配置文件（默认新版 Machine）"
+    echo "V2bX generate     - 生成 V2bX 配置文件"
     echo "V2bX update       - 更新 V2bX"
     echo "V2bX update x.x.x - 安装 V2bX 指定版本"
     echo "V2bX install      - 安装 V2bX"
@@ -757,7 +615,7 @@ show_menu() {
   ${green}11.${plain} 查看 V2bX 版本
   ${green}12.${plain} 生成 X25519 密钥
   ${green}13.${plain} 升级 V2bX 维护脚本
-  ${green}14.${plain} 生成 V2bX 配置文件（默认新版 Machine）
+  ${green}14.${plain} 生成 V2bX 配置文件
   ${green}15.${plain} 退出脚本
  "
  #后续更新可加入上方字符串中
