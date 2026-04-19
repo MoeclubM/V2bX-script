@@ -453,25 +453,10 @@ generate_config_file() {
     fi
     
     machine_configs=()
-    fixed_api_info=false
-    first_entry=true
     while true; do
-        if [ "$first_entry" = true ]; then
-            read -rp "请输入面板地址(https://example.com)：" ApiHost
-            read -rp "请输入面板对接API Key：" ApiKey
-            read -rp "是否固定当前面板地址与API Key，以便连续添加多个Machine？(y/n)" fixed_api
-            if [ "$fixed_api" = "y" ] || [ "$fixed_api" = "Y" ]; then
-                fixed_api_info=true
-                echo -e "${green}已固定当前面板地址与API Key${plain}"
-            fi
-        else
-            if [ "$fixed_api_info" = false ]; then
-                read -rp "请输入面板地址：" ApiHost
-                read -rp "请输入面板对接API Key：" ApiKey
-            fi
-        fi
+        read -rp "请输入面板地址(https://example.com)：" ApiHost
+        read -rp "请输入面板对接API Key：" ApiKey
         add_machine_config
-        first_entry=false
         read -rp "是否继续添加 Machine？(回车继续，输入n或no退出)" continue_adding_machine
         if [[ "$continue_adding_machine" =~ ^[Nn][Oo]? ]]; then
             break
