@@ -303,7 +303,7 @@ EOF
         first_install=false
     fi
 
-    curl -o /usr/bin/V2bX -Ls https://raw.githubusercontent.com/MoeclubM/V2bX-script/master/V2bX.sh
+    curl -o /usr/bin/V2bX -Ls https://raw.githubusercontent.com/MoeclubM/V2bX-script/legacy/V2bX.sh
     chmod +x /usr/bin/V2bX
     if [ ! -L /usr/bin/v2bx ]; then
         ln -s /usr/bin/V2bX /usr/bin/v2bx
@@ -332,7 +332,7 @@ EOF
     echo "------------------------------------------"
     # 首次安装询问是否生成配置文件
     if [[ $first_install == true ]]; then
-        read -rp "检测到你为第一次安装V2bX，是否自动生成配置文件？默认推荐新版 Machine，传统 Node 仅用于兼容。(y/n): " if_generate
+        read -rp "检测到你为第一次安装V2bX，是否自动生成配置文件？(y/n): " if_generate
         if [[ $if_generate == [Yy] ]]; then
             V2bX generate
         fi
